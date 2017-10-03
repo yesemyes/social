@@ -105,7 +105,13 @@ class OauthController extends Controller
 		$token  = $request->get('oauth_token');
 		$verify = $request->get('oauth_verifier');
 		// get twitter service
-		$tw = \OAuth::consumer('Twitter');
+		if( isset($_GET['wp']) ) {
+			$wp = $_GET['wp'];
+			$tw = \OAuth::consumer('Twitter',   'http://social-lena.dev/twitter/login/?wp=true');
+		}else{
+			$tw = \OAuth::consumer('Twitter', 'http://social-lena.dev/twitter/login');
+		}
+		//$tw = \OAuth::consumer('Twitter');
 		// check if code is valid
 		// if code is provided get user data and sign in
 		if ( ! is_null($token) && ! is_null($verify))
@@ -116,8 +122,12 @@ class OauthController extends Controller
 			$result = json_decode($tw->request('account/verify_credentials.json'), true);
 			$result['access_token'] = $token->getAccessToken();
 				//dd( $result );
+			if(isset($_GET['wp'])){
+				//$result['name'] = $result['first_name'];
+				return $this->_register($result,'twitter', $wp);
+			}
 			if( isset($result['access_token']) ){
-				dd('oks');
+				//dd('oks');
 				return $this->_register($result,'twitter');
 			}
 		}
