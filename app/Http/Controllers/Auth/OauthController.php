@@ -213,7 +213,7 @@ class OauthController extends Controller
 						'access_token'    => isset($data['access_token']) ? $data['access_token'] : '',
 						'created_at'      => $currentDate,
 						'updated_at'      => $currentDate,
-						'social_id'      =>  $get_social_id->id,
+						'social_id'       =>  $get_social_id->id,
 					]);
 				if( $wp == 'true' ) {
 					$result = $data['name'].'&email='.$data['email'].'&id='.$data['id'];
@@ -229,13 +229,13 @@ class OauthController extends Controller
 			if( $check_oauth_by_userIdAndProvider == null ) {
 				DB::table('oauth')->insert(
 				[
-					'user_id' => $check_user_by_email->id,
-				   	'provider_user_id' => $data['id'],
-				   	'provider' => $provider,
-					'access_token' => isset($data['access_token']) ? $data['access_token'] : '',
-					'created_at' => $currentDate,
-					'updated_at' => $currentDate,
-					'social_id' => $get_social_id->id,
+					'user_id'            => $check_user_by_email->id,
+					'provider_user_id'   => $data['id'],
+					'provider'           => $provider,
+					'access_token'       => isset($data['access_token']) ? $data['access_token'] : '',
+					'created_at'         => $currentDate,
+					'updated_at'         => $currentDate,
+					'social_id'          => $get_social_id->id,
 				]);
 				if( $wp == 'true' ) {
 					$result = $data['name'].'&email='.$data['email'].'&id='.$data['id'];
