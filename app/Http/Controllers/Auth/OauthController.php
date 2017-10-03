@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Auth;
 
 use App\User;
+use App\Social;
+use App\Oauth;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
@@ -169,37 +171,24 @@ class OauthController extends Controller
 
 	protected function _register($data,$provider,$wp = null)
 	{
-		if( $wp == 'true' ){
-			$result = $data['name'].'&email='.$data['email'].'&id='.$data['id'];
-			return redirect('http://localhost/social-auth.php?name='.$result);
-		}
-
 		$member = Auth::user();
 		$currentDate = date("Y-m-d H:i:s");
-		if( isset($data['email']) && $data['email'] != null )
-		{
+		$get_social_id = Social::where('provider',$provider)->first();
+		if( isset($data['email']) && $data['email'] != null ) {
 			$check_user_by_email = User::where('email',$data['email'])->first(); // fb, google
 		}
-		else
-		{
+		else {
 			$data['email'] = $data['id'];
 			$check_user_by_email = null;
 		}
-		if( isset($check_user_by_email) && $check_user_by_email != null )
-		{
+		if( isset($check_user_by_email) && $check_user_by_email != null ) {
 			$check_oauth_by_userIdAndProvider = DB::table('oauth')
 						->leftJoin('users', 'oauth.user_id', '=', 'users.id')
 						->where('oauth.user_id',$check_user_by_email->id)
 						->where('oauth.provider',$provider)
 						->first();
 		}
-		else
-		{
-			/*$check_oauth_by_userIdAndProvider = DB::table('oauth')
-						->leftJoin('users', 'oauth.user_id', '=', 'users.id')
-						->where('oauth.provider',$provider)
-						->where('oauth.provider_user_id',$data['id'])
-						->first();*/
+		else {
 			$check_oauth_by_userIdAndProvider = null;
 		}
 	// CHECKS ALL VARIANTS
@@ -214,8 +203,7 @@ class OauthController extends Controller
 				'created_at'      => $currentDate,
 				'updated_at'      => $currentDate,
 			]);
-			if($ins_user != 0) 
-			{
+			if($ins_user != 0) {
 				$get_last_user = User::where('id',$ins_user)->first();
 				DB::table('oauth')->insert(
 					[
@@ -225,15 +213,20 @@ class OauthController extends Controller
 						'access_token'    => isset($data['access_token']) ? $data['access_token'] : '',
 						'created_at'      => $currentDate,
 						'updated_at'      => $currentDate,
+						'social_id'      =>  $get_social_id->id,
 					]);
-				Auth::login($get_last_user);
-				return redirect('/home');
+				if( $wp == 'true' ) {
+					$result = $data['name'].'&email='.$data['email'].'&id='.$data['id'];
+					return redirect('http://localhost/social-auth.php?name='.$result);
+				}else {
+					Auth::login($get_last_user);
+					return redirect('/home');
+				}
 			}
 		}
 		elseif( $check_user_by_email != null && $member == null )
 		{
-			if( $check_oauth_by_userIdAndProvider == null )
-			{
+			if( $check_oauth_by_userIdAndProvider == null ) {
 				DB::table('oauth')->insert(
 				[
 					'user_id' => $check_user_by_email->id,
@@ -242,88 +235,108 @@ class OauthController extends Controller
 					'access_token' => isset($data['access_token']) ? $data['access_token'] : '',
 					'created_at' => $currentDate,
 					'updated_at' => $currentDate,
+					'social_id' => $get_social_id->id,
 				]);
-				Auth::login($check_user_by_email);
-				return redirect('/home');
-			}
-			else
-			{
-				$updexistsOauth = DB::table('oauth')
-					->where('user_id',$check_user_by_email->id)
-				   	->where('provider',$provider)
-					->where('provider_user_id',$data['id'])
-					->update([
-						'access_token' => $data['access_token'],
-						'updated_at' => $currentDate,
-				]);
-				
-				if( $updexistsOauth == 1 )
-				{
+				if( $wp == 'true' ) {
+					$result = $data['name'].'&email='.$data['email'].'&id='.$data['id'];
+					return redirect('http://localhost/social-auth.php?name='.$result);
+				}else {
 					Auth::login($check_user_by_email);
 					return redirect('/home');
+				}
+			}
+			else {
+				$updexistsOauth = DB::table('oauth')
+				                     ->where('user_id',$check_user_by_email->id)
+				   	               ->where('provider',$provider)
+											->where('provider_user_id',$data['id'])
+											->update([
+												'access_token' => $data['access_token'],
+												'updated_at' => $currentDate,
+											]);
+				if( $updexistsOauth == 1 ) {
+					if( $wp == 'true' ) {
+						$result = $data['name'].'&email='.$data['email'].'&id='.$data['id'];
+						return redirect('http://localhost/social-auth.php?name='.$result);
+					}else {
+						Auth::login($check_user_by_email);
+						return redirect('/home');
+					}
 				}
 			}
 		}
 		elseif( $check_oauth_by_userIdAndProvider != null && $member == null )
 		{
 			$get_user_by_oauth = User::select('users.*')
-										->leftJoin('oauth', 'users.id', '=', 'oauth.user_id')
-										->where('users.id',$check_oauth_by_userIdAndProvider->id)
-										->first();					
+												->leftJoin('oauth', 'users.id', '=', 'oauth.user_id')
+												->where('users.id',$check_oauth_by_userIdAndProvider->id)
+												->first();
 			$updexistsOauth = DB::table('oauth')
-				->where('user_id',$get_user_by_oauth->id)
-			   	->where('provider',$provider)
-				->where('provider_user_id',$data['id'])
-				->update([
-					'access_token' => $data['access_token'],
-					'updated_at' => $currentDate,
-			]);
+										->where('user_id',$get_user_by_oauth->id)
+						            ->where('provider',$provider)
+										->where('provider_user_id',$data['id'])
+										->update([
+												'access_token' => $data['access_token'],
+												'updated_at' => $currentDate,
+										]);
 
-			if( $updexistsOauth == 1 )
-			{
-				Auth::login($get_user_by_oauth);
-				return redirect('/home');
+			if( $updexistsOauth == 1 ) {
+				if( $wp == 'true' ) {
+					$result = $data['name'].'&email='.$data['email'].'&id='.$data['id'];
+					return redirect('http://localhost/social-auth.php?name='.$result);
+				}else {
+					Auth::login($get_user_by_oauth);
+					return redirect('/home');
+				}
 			}
 		}
 		elseif( $member != null )
 		{
-			if( $check_oauth_by_userIdAndProvider == null )
-			{
+			if( $check_oauth_by_userIdAndProvider == null ) {
 				//Session::flash('message', 'this account '.$provider.' already exists please add your '.$provider.' in dashboard');
 				DB::table('oauth')->insert(
 				[
-					'user_id' => $member->id,
-				   	'provider_user_id' => $data['id'],
-				   	'provider' => $provider,
-					'access_token' => isset($data['access_token']) ? $data['access_token'] : '',
-					'created_at' => $currentDate,
-					'updated_at' => $currentDate,
+					'user_id'          => $member->id,
+					'provider_user_id' => $data['id'],
+					'provider'         => $provider,
+					'access_token'     => isset($data['access_token']) ? $data['access_token'] : '',
+					'created_at'       => $currentDate,
+					'updated_at'       => $currentDate,
+					'social_id'        =>  $get_social_id->id,
 				]);
 				Auth::login($member);
 				return redirect('/home');
 			}
-			else
-			{
+			else {
 				$updexistsOauth = DB::table('oauth')
-					->where('user_id',$member->id)
-				   	->where('provider',$provider)
-					->where('provider_user_id',$data['id'])
-					->update([
-						'access_token' => $data['access_token'],
-						'updated_at' => $currentDate,
-				]);
+											->where('user_id',$member->id)
+				   	               ->where('provider',$provider)
+											->where('provider_user_id',$data['id'])
+											->update([
+												'access_token' => $data['access_token'],
+												'updated_at' => $currentDate,
+											]);
 
-				if( $updexistsOauth == 1 )
-				{
-					Auth::login($member);
-					return redirect('/home');
+				if( $updexistsOauth == 1 ) {
+					if( $wp == 'true' ) {
+						$result = $data['name'].'&email='.$data['email'].'&id='.$data['id'];
+						return redirect('http://localhost/social-auth.php?name='.$result);
+					}else {
+						Auth::login($member);
+						return redirect('/home');
+					}
 				}
 			}
 		}
 		else
 		{
 			Session::flash('message', 'undefined error!');
-			return redirect('/home');
+			if( $wp == 'true' ) {
+				$result = $data['name'].'&email='.$data['email'].'&id='.$data['id'];
+				return redirect('http://localhost/social-auth.php?name='.$result);
+			}else{
+				return redirect('/home');
+			}
 		}
 	// END
 	}
