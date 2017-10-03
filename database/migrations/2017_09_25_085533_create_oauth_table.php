@@ -17,6 +17,7 @@ class CreateOauthTable extends Migration
             $table->increments('id');
             $table->integer('user_id')->unsigned();
             $table->string('provider_user_id');
+            $table->string('social_id');
             $table->string('provider');
             $table->string('access_token');
             $table->timestamps();
