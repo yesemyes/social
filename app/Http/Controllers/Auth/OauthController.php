@@ -22,14 +22,12 @@ class OauthController extends Controller
 		// get data from request
 		$code = $request->get('code');
 		// get fb service
-
 		if( isset($_GET['wp']) ) {
 			$wp = $_GET['wp'];
 			$fb = \OAuth::consumer('Facebook', 'http://social-lena.dev/facebook/login/?wp=true');
 		}else{
 			$fb = \OAuth::consumer('Facebook', 'http://social-lena.dev/facebook/login');
 		}
-
 		// if code is provided get user data and sign in
 		if ( ! is_null($code))
 		{
@@ -40,11 +38,11 @@ class OauthController extends Controller
 			$result['access_token'] = $token->getAccessToken();
 			//$message = 'Your unique facebook user id is: ' . $result['id'] . ' and your name is ' . $result['name'];
 			 //echo $message. "<br/>";
-			if(isset($_GET['wp'])){
+			if( isset($_GET['wp']) ) {
 				$result['name'] = $result['first_name'];
 				return $this->_register($result,'facebook', $wp);
 			}
-			if( isset($result['email']) ){
+			if( isset($result['email']) ) {
 				$result['name'] = $result['first_name'];
 				return $this->_register($result,'facebook');
 			}
@@ -54,7 +52,6 @@ class OauthController extends Controller
 		{
 			// get fb authorization
 			$url = $fb->getAuthorizationUri();
-			//dd($url);
 			// return to facebook login url
 			return redirect((string)$url);
 		}
@@ -64,10 +61,13 @@ class OauthController extends Controller
 	{
 		// get data from request
 		$code = $request->get('code');
-
 		// get google service
-		$googleService = \OAuth::consumer('Google');
-
+		if( isset($_GET['wp']) ) {
+			$wp = $_GET['wp'];
+			$googleService = \OAuth::consumer('Google','http://social-lena.dev/google/login/?wp=true');
+		}else{
+			$googleService = \OAuth::consumer('Google','http://social-lena.dev/google/login');
+		}
 		// check if code is valid
 
 		// if code is provided get user data and sign in
@@ -75,25 +75,22 @@ class OauthController extends Controller
 		{
 			// This was a callback request from google, get the token
 			$token = $googleService->requestAccessToken($code);
-
 			// Send a request with it
 			$result = json_decode($googleService->request('https://www.googleapis.com/oauth2/v1/userinfo'), true);
 			$result['access_token'] = $token->getAccessToken();
-			//$message = 'Your unique Google user id is: ' . $result['id'] . ' and your name is ' . $result['name'];
-			//echo $message. "<br/>";
+			if(isset($_GET['wp'])) {
+				//$result['name'] = $result['first_name'];
+				return $this->_register($result,'google', $wp);
+			}
 			if( $result['verified_email'] == true ) {
 				return $this->_register($result,'google');
 			}
-			//Var_dump
-			//display whole array.
-			//dd($result);
 		}
 		// if not ask for permission first
 		else
 		{
 			// get googleService authorization
 			$url = $googleService->getAuthorizationUri();
-
 			// return to google login url
 			return redirect((string)$url);
 		}
@@ -111,7 +108,6 @@ class OauthController extends Controller
 		}else{
 			$tw = \OAuth::consumer('Twitter', 'http://social-lena.dev/twitter/login');
 		}
-		//$tw = \OAuth::consumer('Twitter');
 		// check if code is valid
 		// if code is provided get user data and sign in
 		if ( ! is_null($token) && ! is_null($verify))
@@ -121,13 +117,10 @@ class OauthController extends Controller
 			// Send a request with it
 			$result = json_decode($tw->request('account/verify_credentials.json'), true);
 			$result['access_token'] = $token->getAccessToken();
-				//dd( $result );
-			if(isset($_GET['wp'])){
-				//$result['name'] = $result['first_name'];
+			if(isset($_GET['wp'])) {
 				return $this->_register($result,'twitter', $wp);
 			}
-			if( isset($result['access_token']) ){
-				//dd('oks');
+			if( isset($result['access_token']) ) {
 				return $this->_register($result,'twitter');
 			}
 		}
@@ -147,26 +140,26 @@ class OauthController extends Controller
 	{
 		// get data from request
 		$code = $request->get('code');
-
-		$linkedinService = \OAuth::consumer('Linkedin');
-
-
+		if( isset($_GET['wp']) ) {
+			$wp = $_GET['wp'];
+			$linkedinService = \OAuth::consumer('Linkedin','http://social-lena.dev/linkedin/login/?wp=true');
+		}else{
+			$linkedinService = \OAuth::consumer('Linkedin','http://social-lena.dev/linkedin/login');
+		}
 		if ( ! is_null($code))
 		{
 			// This was a callback request from linkedin, get the token
 			$token = $linkedinService->requestAccessToken($code);
-
 			// Send a request with it. Please note that XML is the default format.
 			$result = json_decode($linkedinService->request('/people/~?format=json'), true);
 			$result['access_token'] = $token->getAccessToken();
-			//dd($result);
-			if( isset($result['access_token']) ){
+			if(isset($_GET['wp'])) {
+				//$result['name'] = $result['first_name'];
+				return $this->_register($result,'linkedin', $wp);
+			}
+			if( isset($result['access_token']) ) {
 				return $this->_register($result,'linkedin');
 			}
-			//Var_dump
-			//display whole array.
-			//dd($result);
-
 		}
 		// if not ask for permission first
 		else

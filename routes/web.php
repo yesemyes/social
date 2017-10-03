@@ -36,13 +36,8 @@ Route::post('/account/delete/{id}', 'Auth\OauthController@destroy');
 
 /* API */
 Route::group(['middleware' => 'api', 'prefix' => 'api'], function () {
-    //Route::post('register', 'APIController@register');
     Route::post('login', 'APIController@login');
-    Route::post('twitter/login', 'APIController@login');
     Route::group(['middleware' => 'jwt-auth'], function () {
-    	//Route::post('get_user_details', 'APIController@get_user_details');
-    	//Route::post('del_user', 'APIController@del_user');
-    	//Route::get('twitter/login', 'Auth\OauthController@loginWithTwitter');
-    	//Route::get('facebook/login', 'Auth\OauthController@loginWithFacebook');
+
     });
 });
