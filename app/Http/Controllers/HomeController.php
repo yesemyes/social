@@ -3,12 +3,15 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Support\Facades\Session;
-use Illuminate\Support\Facades\Auth;
+//use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
 use App\User;
+use App\Api_user;
 use App\Social;
 use App\Oauth;
 use DB;
+use Auth;
+
 
 class HomeController extends Controller
 {
@@ -29,9 +32,17 @@ class HomeController extends Controller
      */
     public function index()
     {
-			$user = Auth::user();
+			//$user = Auth::user();
+			$user = new User;
+	      //dd($user);
 			$socials = Social::get();
-			$userConnectedAccounts = $user->connectedAccounts()->get()->keyBy('social_id');
+			//$userConnectedAccounts = $user->connectedAccounts()->get()->keyBy('social_id');
+			$userConnectedAccounts = $user::select('oauth.*','users.*')
+			                              ->leftJoin('api_users','api_users.id','=','users.api_user_id')
+			                              ->leftJoin('oauth','oauth.user_id','=','users.id')
+			                              ->where('users.api_user_id',3)
+			                              ->where('users.id',72)->get()->keyBy('social_id');
+			//dd($userConnectedAccounts);
 			$userAccounts = array();
 			foreach($socials as $key => $item) {
 				if( isset($userConnectedAccounts[$item->id]) ){
@@ -43,6 +54,13 @@ class HomeController extends Controller
 			}
 			return view('home', ['user' => $user, 'userAccounts' => $userAccounts]);
     }
+
+
+
+	public function posts()
+	{
+		return view('posts');
+	}
 
     public function Account()
     {

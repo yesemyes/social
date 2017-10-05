@@ -16,7 +16,10 @@ class User extends Authenticatable
      *
      * @var array
      */
-    protected $fillable = [
+	protected $connection = 'mysql2';
+	protected $table = 'users';
+
+	 protected $fillable = [
         'name', 'email', 'password',
     ];
 
@@ -34,7 +37,7 @@ class User extends Authenticatable
 		return $this->hasMany('App\Oauth');
 	}
 
-	static function byOauth($id, $provider)
+	/*static function byOauth($id, $provider)
 	{
 
 		$user = DB::table('oauth')
@@ -46,7 +49,7 @@ class User extends Authenticatable
 		          ->first();
 
 		$user = $user ? self::find($user->id) : false;
-//dd($user);
+
 		return $user;
-	}
+	}*/
 }

@@ -69,6 +69,7 @@
                             @endif
                         @endforeach
                     </ul>
+                    <a href="/posts">fb post</a>
                 </div>
             </div>
         </div>

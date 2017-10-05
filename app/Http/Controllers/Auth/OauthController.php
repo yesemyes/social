@@ -10,7 +10,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
 use DB;
-use Hash;
+//use Hash;
 use JWTAuth;
 
 use Illuminate\Support\Facades\Mail;
@@ -25,7 +25,9 @@ class OauthController extends Controller
 		if( isset($_GET['wp']) ) {
 			$wp = $_GET['wp'];
 			$fb = \OAuth::consumer('Facebook', 'http://social-lena.dev/facebook/login/?wp=true');
+
 		}else{
+			$wp = null;
 			$fb = \OAuth::consumer('Facebook', 'http://social-lena.dev/facebook/login');
 		}
 		// if code is provided get user data and sign in
@@ -36,15 +38,10 @@ class OauthController extends Controller
 			// Send a request with it
 			$result = json_decode($fb->request('/me?fields=id,first_name,last_name,name,email,gender,locale,picture'), true);
 			$result['access_token'] = $token->getAccessToken();
-			//$message = 'Your unique facebook user id is: ' . $result['id'] . ' and your name is ' . $result['name'];
-			 //echo $message. "<br/>";
-			if( isset($_GET['wp']) ) {
-				$result['name'] = $result['first_name'];
-				return $this->_register($result,'facebook', $wp);
-			}
+
 			if( isset($result['email']) ) {
 				$result['name'] = $result['first_name'];
-				return $this->_register($result,'facebook');
+				return $this->_register($result,'facebook', $wp);
 			}
 		}
 		// if not ask for permission first
@@ -154,7 +151,7 @@ class OauthController extends Controller
 			$result = json_decode($linkedinService->request('/people/~?format=json'), true);
 			$result['access_token'] = $token->getAccessToken();
 			if(isset($_GET['wp'])) {
-				//$result['name'] = $result['first_name'];
+				$result['name'] = $result['firstName'];
 				return $this->_register($result,'linkedin', $wp);
 			}
 			if( isset($result['access_token']) ) {
@@ -174,7 +171,11 @@ class OauthController extends Controller
 
 	protected function _register($data,$provider,$wp = null)
 	{
+		if( $provider == "facebook" ){
+			Session::put('fb_token', $data['access_token']);
+		}
 		$member = Auth::user();
+
 		$currentDate = date("Y-m-d H:i:s");
 		$get_social_id = Social::where('provider',$provider)->first();
 		if( isset($data['email']) && $data['email'] != null ) {
@@ -185,14 +186,18 @@ class OauthController extends Controller
 			$check_user_by_email = null;
 		}
 		if( isset($check_user_by_email) && $check_user_by_email != null ) {
-			$check_oauth_by_userIdAndProvider = DB::table('oauth')
-						->leftJoin('users', 'oauth.user_id', '=', 'users.id')
+			$check_oauth_by_userIdAndProvider = Oauth::
+						leftJoin('users', 'oauth.user_id', '=', 'users.id')
 						->where('oauth.user_id',$check_user_by_email->id)
 						->where('oauth.provider',$provider)
 						->first();
 		}
 		else {
-			$check_oauth_by_userIdAndProvider = null;
+			$check_oauth_by_userIdAndProvider = Oauth::
+			                                      leftJoin('users', 'oauth.user_id', '=', 'users.id')
+			                                      ->where('oauth.provider_user_id',$data['id'])
+			                                      ->where('oauth.provider',$provider)
+			                                      ->first();
 		}
 	// CHECKS ALL VARIANTS
 		if( $check_user_by_email == null && $member == null && $check_oauth_by_userIdAndProvider == null )
@@ -219,7 +224,8 @@ class OauthController extends Controller
 						'social_id'       =>  $get_social_id->id,
 					]);
 				if( $wp == 'true' ) {
-					$result = $data['name'].'&email='.$data['email'].'&id='.$data['id'];
+					Auth::login($get_last_user);
+					$result = @$data['name'].'&email='.@$data['email'].'&id='.$data['id'];
 					return redirect('http://localhost/social-auth.php?name='.$result);
 				}else {
 					Auth::login($get_last_user);
@@ -230,7 +236,7 @@ class OauthController extends Controller
 		elseif( $check_user_by_email != null && $member == null )
 		{
 			if( $check_oauth_by_userIdAndProvider == null ) {
-				DB::table('oauth')->insert(
+				Oauth::insert(
 				[
 					'user_id'            => $check_user_by_email->id,
 					'provider_user_id'   => $data['id'],
@@ -241,7 +247,8 @@ class OauthController extends Controller
 					'social_id'          => $get_social_id->id,
 				]);
 				if( $wp == 'true' ) {
-					$result = $data['name'].'&email='.$data['email'].'&id='.$data['id'];
+					Auth::login($check_user_by_email);
+					$result = @$data['name'].'&email='.@$data['email'].'&id='.$data['id'];
 					return redirect('http://localhost/social-auth.php?name='.$result);
 				}else {
 					Auth::login($check_user_by_email);
@@ -249,8 +256,8 @@ class OauthController extends Controller
 				}
 			}
 			else {
-				$updexistsOauth = DB::table('oauth')
-				                     ->where('user_id',$check_user_by_email->id)
+				$updexistsOauth = Oauth::
+											where('user_id',$check_user_by_email->id)
 				   	               ->where('provider',$provider)
 											->where('provider_user_id',$data['id'])
 											->update([
@@ -259,7 +266,8 @@ class OauthController extends Controller
 											]);
 				if( $updexistsOauth == 1 ) {
 					if( $wp == 'true' ) {
-						$result = $data['name'].'&email='.$data['email'].'&id='.$data['id'];
+						Auth::login($check_user_by_email);
+						$result = @$data['name'].'&email='.@$data['email'].'&id='.$data['id'];
 						return redirect('http://localhost/social-auth.php?name='.$result);
 					}else {
 						Auth::login($check_user_by_email);
@@ -274,8 +282,8 @@ class OauthController extends Controller
 												->leftJoin('oauth', 'users.id', '=', 'oauth.user_id')
 												->where('users.id',$check_oauth_by_userIdAndProvider->id)
 												->first();
-			$updexistsOauth = DB::table('oauth')
-										->where('user_id',$get_user_by_oauth->id)
+			$updexistsOauth = Oauth::
+										where('user_id',$get_user_by_oauth->id)
 						            ->where('provider',$provider)
 										->where('provider_user_id',$data['id'])
 										->update([
@@ -285,6 +293,7 @@ class OauthController extends Controller
 
 			if( $updexistsOauth == 1 ) {
 				if( $wp == 'true' ) {
+					Auth::login($get_user_by_oauth);
 					$result = $data['name'].'&email='.$data['email'].'&id='.$data['id'];
 					return redirect('http://localhost/social-auth.php?name='.$result);
 				}else {
@@ -297,7 +306,7 @@ class OauthController extends Controller
 		{
 			if( $check_oauth_by_userIdAndProvider == null ) {
 				//Session::flash('message', 'this account '.$provider.' already exists please add your '.$provider.' in dashboard');
-				DB::table('oauth')->insert(
+				Oauth::insert(
 				[
 					'user_id'          => $member->id,
 					'provider_user_id' => $data['id'],
@@ -307,12 +316,19 @@ class OauthController extends Controller
 					'updated_at'       => $currentDate,
 					'social_id'        =>  $get_social_id->id,
 				]);
-				Auth::login($member);
-				return redirect('/home');
+				if( $wp == 'true' ) {
+					Auth::login($member);
+					$result = $data['name'].'&email='.$data['email'].'&id='.$data['id'];
+					return redirect('http://localhost/social-auth.php?name='.$result);
+				}else{
+					Auth::login($member);
+					return redirect('/home');
+				}
+
 			}
 			else {
-				$updexistsOauth = DB::table('oauth')
-											->where('user_id',$member->id)
+				$updexistsOauth = Oauth::
+											where('user_id',$member->id)
 				   	               ->where('provider',$provider)
 											->where('provider_user_id',$data['id'])
 											->update([
@@ -322,7 +338,8 @@ class OauthController extends Controller
 
 				if( $updexistsOauth == 1 ) {
 					if( $wp == 'true' ) {
-						$result = $data['name'].'&email='.$data['email'].'&id='.$data['id'];
+						Auth::login($member);
+						$result = @$data['name'].'&email='.@$data['email'].'&id='.$data['id'];
 						return redirect('http://localhost/social-auth.php?name='.$result);
 					}else {
 						Auth::login($member);
@@ -335,7 +352,7 @@ class OauthController extends Controller
 		{
 			Session::flash('message', 'undefined error!');
 			if( $wp == 'true' ) {
-				$result = $data['name'].'&email='.$data['email'].'&id='.$data['id'];
+				$result = @$data['name'].'&email='.@$data['email'].'&id='.$data['id'];
 				return redirect('http://localhost/social-auth.php?name='.$result);
 			}else{
 				return redirect('/home');

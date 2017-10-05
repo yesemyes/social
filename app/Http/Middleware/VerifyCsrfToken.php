@@ -17,5 +17,7 @@ class VerifyCsrfToken extends BaseVerifier
         'api/get_user',
         'api/twitter/login',
         'api/facebook/login',
+        'facebook/login',
+        'api/users',
     ];
 }
