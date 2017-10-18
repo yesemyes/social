@@ -8,11 +8,11 @@ use App\Oauth;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Session;
+//use Illuminate\Support\Facades\Session;
 use DB;
 //use Hash;
 use JWTAuth;
-
+use Session;
 use Illuminate\Support\Facades\Mail;
 
 class OauthController extends Controller
@@ -41,6 +41,8 @@ class OauthController extends Controller
 
 			if( isset($result['email']) ) {
 				$result['name'] = $result['first_name'];
+				//Session::set('fb_token', $result['access_token']);
+				//session()->put('fb_token',$result['access_token']);
 				return $this->_register($result,'facebook', $wp);
 			}
 		}
@@ -113,7 +115,16 @@ class OauthController extends Controller
 			$token = $tw->requestAccessToken($token, $verify);
 			// Send a request with it
 			$result = json_decode($tw->request('account/verify_credentials.json'), true);
+
 			$result['access_token'] = $token->getAccessToken();
+			$result['access_token_secret'] = $token->getAccessTokenSecret();
+
+			Session::put('tw_token', $result['access_token']);
+			Session::put('tw_token_secret', $result['access_token_secret']);
+
+			testA(Session::get('tw_token'));
+			testB(Session::get('tw_token_secret'));
+
 			if(isset($_GET['wp'])) {
 				return $this->_register($result,'twitter', $wp);
 			}
@@ -171,11 +182,7 @@ class OauthController extends Controller
 
 	protected function _register($data,$provider,$wp = null)
 	{
-		if( $provider == "facebook" ){
-			Session::put('fb_token', $data['access_token']);
-		}
 		$member = Auth::user();
-
 		$currentDate = date("Y-m-d H:i:s");
 		$get_social_id = Social::where('provider',$provider)->first();
 		if( isset($data['email']) && $data['email'] != null ) {
@@ -225,8 +232,8 @@ class OauthController extends Controller
 					]);
 				if( $wp == 'true' ) {
 					Auth::login($get_last_user);
-					$result = @$data['name'].'&email='.@$data['email'].'&id='.$data['id'];
-					return redirect('http://localhost/social-auth.php?name='.$result);
+					//$result = @$data['name'].'&email='.@$data['email'].'&id='.$data['id'];
+					return redirect('http://localhost/blog-to-social/wp-admin/admin.php?page=iio4social-network');
 				}else {
 					Auth::login($get_last_user);
 					return redirect('/home');
@@ -235,6 +242,7 @@ class OauthController extends Controller
 		}
 		elseif( $check_user_by_email != null && $member == null )
 		{
+			//return response(['asd'=>$check_user_by_email]);
 			if( $check_oauth_by_userIdAndProvider == null ) {
 				Oauth::insert(
 				[
@@ -248,8 +256,8 @@ class OauthController extends Controller
 				]);
 				if( $wp == 'true' ) {
 					Auth::login($check_user_by_email);
-					$result = @$data['name'].'&email='.@$data['email'].'&id='.$data['id'];
-					return redirect('http://localhost/social-auth.php?name='.$result);
+					//$result = @$data['name'].'&email='.@$data['email'].'&id='.$data['id'];
+					return redirect('http://localhost/blog-to-social/wp-admin/admin.php?page=iio4social-network');
 				}else {
 					Auth::login($check_user_by_email);
 					return redirect('/home');
@@ -267,8 +275,8 @@ class OauthController extends Controller
 				if( $updexistsOauth == 1 ) {
 					if( $wp == 'true' ) {
 						Auth::login($check_user_by_email);
-						$result = @$data['name'].'&email='.@$data['email'].'&id='.$data['id'];
-						return redirect('http://localhost/social-auth.php?name='.$result);
+						//$result = @$data['name'].'&email='.@$data['email'].'&id='.$data['id'];
+						return redirect('http://localhost/blog-to-social/wp-admin/admin.php?page=iio4social-network');
 					}else {
 						Auth::login($check_user_by_email);
 						return redirect('/home');
@@ -295,7 +303,7 @@ class OauthController extends Controller
 				if( $wp == 'true' ) {
 					Auth::login($get_user_by_oauth);
 					$result = $data['name'].'&email='.$data['email'].'&id='.$data['id'];
-					return redirect('http://localhost/social-auth.php?name='.$result);
+					return redirect('http://localhost/blog-to-social/wp-admin/admin.php?page=iio4social-network');
 				}else {
 					Auth::login($get_user_by_oauth);
 					return redirect('/home');
@@ -319,7 +327,7 @@ class OauthController extends Controller
 				if( $wp == 'true' ) {
 					Auth::login($member);
 					$result = $data['name'].'&email='.$data['email'].'&id='.$data['id'];
-					return redirect('http://localhost/social-auth.php?name='.$result);
+					return redirect('http://localhost/blog-to-social/wp-admin/admin.php?page=iio4social-network');
 				}else{
 					Auth::login($member);
 					return redirect('/home');
@@ -339,8 +347,9 @@ class OauthController extends Controller
 				if( $updexistsOauth == 1 ) {
 					if( $wp == 'true' ) {
 						Auth::login($member);
-						$result = @$data['name'].'&email='.@$data['email'].'&id='.$data['id'];
-						return redirect('http://localhost/social-auth.php?name='.$result);
+
+						//$result = @$data['name'].'&email='.@$data['email'].'&id='.$data['id'];
+						return redirect('http://localhost/blog-to-social/wp-admin/admin.php?page=iio4social-network');
 					}else {
 						Auth::login($member);
 						return redirect('/home');
@@ -352,8 +361,8 @@ class OauthController extends Controller
 		{
 			Session::flash('message', 'undefined error!');
 			if( $wp == 'true' ) {
-				$result = @$data['name'].'&email='.@$data['email'].'&id='.$data['id'];
-				return redirect('http://localhost/social-auth.php?name='.$result);
+				//$result = @$data['name'].'&email='.@$data['email'].'&id='.$data['id'];
+				return redirect('http://localhost/blog-to-social/wp-admin/admin.php?page=iio4social-network');
 			}else{
 				return redirect('/home');
 			}
@@ -364,7 +373,7 @@ class OauthController extends Controller
 	public function destroy( $id, Request $request )
 	{
 	    if ( $request->ajax() ) {
-	    	$account = DB::table('oauth')->where('id',$id)->delete();
+	    	$account = Oauth::where('id',$id)->delete();
 
 	        return response(['message' => 'Product deleted', 'status' => 'success']);
 	    }

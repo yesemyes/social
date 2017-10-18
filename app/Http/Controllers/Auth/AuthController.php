@@ -12,7 +12,7 @@ use Auth;
 class AuthController extends Controller
 {
     //
-	public function __construct() {
+	/*public function __construct() {
 		$this->middleware('guest', ['except' => 'getLogout']);
 	}
 
@@ -30,5 +30,5 @@ class AuthController extends Controller
 		$currentUser = Auth::user();
 		// if no errors are encountered we can return a JWT
 		return response()->json(['auth'=> $currentUser, 'token' => $token]);
-	}
+	}*/
 }

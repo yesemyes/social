@@ -9,9 +9,7 @@ class authJWT
 	public function handle($request, Closure $next)
 	{
 		try {
-			//Config::set('auth.providers.users.model', User::class);
 			$user = JWTAuth::toUser($request->input('token'));
-			//dd($user);
 		} catch (Exception $e) {
 			if ($e instanceof \Tymon\JWTAuth\Exceptions\TokenInvalidException){
 				return response()->json(['error'=>'Token is Invalid']);

@@ -27,6 +27,7 @@ return [
 
     'env' => env('APP_ENV', 'production'),
 
+
     /*
     |--------------------------------------------------------------------------
     | Application Debug Mode
@@ -167,7 +168,8 @@ return [
         /*
          * Package Service Providers...
          */
-
+		SammyK\LaravelFacebookSdk\LaravelFacebookSdkServiceProvider::class,
+	    Thujohn\Twitter\TwitterServiceProvider::class,
         //
 
         /*
@@ -232,7 +234,10 @@ return [
         'OAuth'     => Artdarek\OAuth\Facade\OAuth::class,
 
         'JWTAuth' => Tymon\JWTAuth\Facades\JWTAuth::class,
-        'JWTFactory' => Tymon\JWTAuth\Facades\JWTFactory::class
+        'JWTFactory' => Tymon\JWTAuth\Facades\JWTFactory::class,
+		
+			'Facebook' => SammyK\LaravelFacebookSdk\FacebookFacade::class,
+        'Twitter' => Thujohn\Twitter\Facades\Twitter::class,
 
     ],
 
