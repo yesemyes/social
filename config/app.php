@@ -168,8 +168,6 @@ return [
         /*
          * Package Service Providers...
          */
-		SammyK\LaravelFacebookSdk\LaravelFacebookSdkServiceProvider::class,
-	    Thujohn\Twitter\TwitterServiceProvider::class,
         //
 
         /*
@@ -235,9 +233,7 @@ return [
 
         'JWTAuth' => Tymon\JWTAuth\Facades\JWTAuth::class,
         'JWTFactory' => Tymon\JWTAuth\Facades\JWTFactory::class,
-		
-			'Facebook' => SammyK\LaravelFacebookSdk\FacebookFacade::class,
-        'Twitter' => Thujohn\Twitter\Facades\Twitter::class,
+
 
     ],
 

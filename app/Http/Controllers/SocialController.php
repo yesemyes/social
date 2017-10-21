@@ -5,11 +5,13 @@ session_start();
 
 require_once( base_path('socials/facebook/fbsdk/src/Facebook/autoload.php') );
 require_once( base_path('socials/twitter/TwitterAPIExchange.php') );
+require_once( base_path('socials/linkedin/LinkedIn/LinkedIn.php') );
 
 use Facebook\Facebook as Facebook;
 use Facebook\Exceptions\FacebookResponseException as FacebookResponseException;
 use Facebook\Exceptions\FacebookSDKException as FacebookSDKException;
 use TwitterAPIExchange;
+use LinkedIn\LinkedIn;
 
 use Illuminate\Http\Request;
 
@@ -17,6 +19,7 @@ class SocialController extends Controller
 {
 	public $fb;
 	public $twitter;
+	public $linkedin;
 
 	public function facebook(Request $request)
 	{
@@ -40,18 +43,24 @@ class SocialController extends Controller
 			exit;
 		}
 		$graphNode = $response->getGraphNode();
-		return response(['result'=>$graphNode]);
+		if( $graphNode != null ){
+			return response()->json(['result'=>'success']);
+		}else{
+			return response()->json(['result'=>'error']);
+		}
+
 	}
 
 	public function twitter(Request $request) // work in live server
 	{
 		$settings = array(
-			'oauth_access_token' => "", // request->access_token
-			'oauth_access_token_secret' => "", // request->access_token_secret
+			'oauth_access_token' => $request->access_token, // request->access_token
+			'oauth_access_token_secret' => $request->access_token_secret, // request->access_token_secret
 			'consumer_key' => "CKhBDjmBwp8GiaRofjRZBqw03",
 			'consumer_secret' => "7VPPxg3wzuZhZeBkaqiPbiI3xacj3kN2qLtREgjN7Sim9Kk18w"
 		);
 		/** URL for REST request, see: https://dev.twitter.com/docs/api/1.1/ **/
+
 		$url = 'https://api.twitter.com/1.1/statuses/update.json';
 		$requestMethod = 'POST';
 		$this->twitter = new TwitterAPIExchange($settings);
@@ -60,11 +69,44 @@ class SocialController extends Controller
 		$response = $this->twitter->buildOauth($url, $requestMethod)
 		                          ->setPostfields($postfields)
 		                          ->performRequest();
-		return response(['result'=>$response]);
+		if( $response != null ){
+			return response()->json(['result'=>'success']);
+		}else{
+			return response()->json(['result'=>'error']);
+		}
+
 	}
 
 	public function google(Request $request) // not working
 	{
 		return 'google plus API';
+	}
+
+	public function linkedin(Request $request)
+	{
+		$li = new LinkedIn(
+			array(
+				'api_key' => '77bxo3m22s83c2',
+				'api_secret' => 'POVE4Giqvd4DlTnU',
+				'callback_url' => 'http://social-lena.dev/linkedin/login/?wp=true'
+			)
+		);
+		$li->setAccessToken($request->token_soc);
+		$postParams = array(
+			"content" => array(
+				"title" => $request->message,
+				"description" => "asd123",
+				"submitted-url" => $request->link
+			),
+			"visibility" => array(
+				"code" => "anyone"
+			)
+		);
+		$response = $li->post('/people/~/shares?format=json', $postParams);
+		if( $response != null ){
+			return response()->json(['result'=>'success']);
+		}else{
+			return response()->json(['result'=>'error']);
+		}
 	}
 }

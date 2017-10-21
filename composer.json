@@ -8,9 +8,6 @@
         "php": ">=5.6.4",
         "laravel/framework": "5.3.*",
         "oriceon/oauth-5-laravel": "dev-master",
-        "predis/predis": "^1.1",
-        "sammyk/laravel-facebook-sdk": "^3.0",
-        "thujohn/twitter": "^2.2",
         "tymon/jwt-auth": "0.5.*"
     },
     "require-dev": {

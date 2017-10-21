@@ -13,14 +13,16 @@ class VerifyCsrfToken extends BaseVerifier
      */
     protected $except = [
         'api/login',
-        /*'api/get_user_details',*/
+        'api/register',
         'api/get_user',
-        'api/twitter/login',
-        'api/facebook/login',
         'facebook/login',
+        'api/facebook/login',
+        'api/google/login',
+        'google/login',
         'api/users',
         'api/account/delete',
-	    'api/twitter',
-	    'api/facebook',
+	     'api/twitter',
+	     'api/facebook',
+	     'api/linkedin',
     ];
 }

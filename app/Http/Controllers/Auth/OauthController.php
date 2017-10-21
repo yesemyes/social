@@ -19,17 +19,18 @@ class OauthController extends Controller
 {
 	public function loginWithFacebook(Request $request)
 	{
-		// get data from request
 		$code = $request->get('code');
-		// get fb service
+
 		if( isset($_GET['wp']) ) {
 			$wp = $_GET['wp'];
+			if( isset($_GET['user_id']) ) Session::put('api_user_id', $_GET['user_id']);
+			if( isset($_GET['user_name']) ) Session::put('api_user_name', $_GET['user_name']);
 			$fb = \OAuth::consumer('Facebook', 'http://social-lena.dev/facebook/login/?wp=true');
-
-		}else{
+		}else {
 			$wp = null;
 			$fb = \OAuth::consumer('Facebook', 'http://social-lena.dev/facebook/login');
 		}
+
 		// if code is provided get user data and sign in
 		if ( ! is_null($code))
 		{
@@ -38,12 +39,10 @@ class OauthController extends Controller
 			// Send a request with it
 			$result = json_decode($fb->request('/me?fields=id,first_name,last_name,name,email,gender,locale,picture'), true);
 			$result['access_token'] = $token->getAccessToken();
+			$result['access_token_secret'] = '';
 
-			if( isset($result['email']) ) {
-				$result['name'] = $result['first_name'];
-				//Session::set('fb_token', $result['access_token']);
-				//session()->put('fb_token',$result['access_token']);
-				return $this->_register($result,'facebook', $wp);
+			if( isset($result['access_token']) ) {
+				return $this->regApi($result,'facebook', $wp);
 			}
 		}
 		// if not ask for permission first
@@ -63,8 +62,11 @@ class OauthController extends Controller
 		// get google service
 		if( isset($_GET['wp']) ) {
 			$wp = $_GET['wp'];
+			if( isset($_GET['user_id']) ) Session::put('api_user_id', $_GET['user_id']);
+			if( isset($_GET['user_name']) ) Session::put('api_user_name', $_GET['user_name']);
 			$googleService = \OAuth::consumer('Google','http://social-lena.dev/google/login/?wp=true');
 		}else{
+			$wp = null;
 			$googleService = \OAuth::consumer('Google','http://social-lena.dev/google/login');
 		}
 		// check if code is valid
@@ -77,13 +79,16 @@ class OauthController extends Controller
 			// Send a request with it
 			$result = json_decode($googleService->request('https://www.googleapis.com/oauth2/v1/userinfo'), true);
 			$result['access_token'] = $token->getAccessToken();
-			if(isset($_GET['wp'])) {
-				//$result['name'] = $result['first_name'];
-				return $this->_register($result,'google', $wp);
+			$result['access_token_secret'] = '';
+
+			if(isset($result['access_token'])) {
+				$result['first_name'] = $result['given_name'];
+				$result['last_name'] = $result['family_name'];
+				return $this->regApi($result,'google', $wp);
 			}
-			if( $result['verified_email'] == true ) {
+			/*if( $result['verified_email'] == true ) {
 				return $this->_register($result,'google');
-			}
+			}*/
 		}
 		// if not ask for permission first
 		else
@@ -103,6 +108,8 @@ class OauthController extends Controller
 		// get twitter service
 		if( isset($_GET['wp']) ) {
 			$wp = $_GET['wp'];
+			if( isset($_GET['user_id']) ) Session::put('api_user_id', $_GET['user_id']);
+			if( isset($_GET['user_name']) ) Session::put('api_user_name', $_GET['user_name']);
 			$tw = \OAuth::consumer('Twitter',   'http://social-lena.dev/twitter/login/?wp=true');
 		}else{
 			$tw = \OAuth::consumer('Twitter', 'http://social-lena.dev/twitter/login');
@@ -119,14 +126,10 @@ class OauthController extends Controller
 			$result['access_token'] = $token->getAccessToken();
 			$result['access_token_secret'] = $token->getAccessTokenSecret();
 
-			Session::put('tw_token', $result['access_token']);
-			Session::put('tw_token_secret', $result['access_token_secret']);
-
-			testA(Session::get('tw_token'));
-			testB(Session::get('tw_token_secret'));
-
 			if(isset($_GET['wp'])) {
-				return $this->_register($result,'twitter', $wp);
+				$result['first_name'] = $result['name'];
+				$result['last_name'] = '';
+				return $this->regApi($result,'twitter', $wp);
 			}
 			if( isset($result['access_token']) ) {
 				return $this->_register($result,'twitter');
@@ -150,6 +153,8 @@ class OauthController extends Controller
 		$code = $request->get('code');
 		if( isset($_GET['wp']) ) {
 			$wp = $_GET['wp'];
+			if( isset($_GET['user_id']) ) Session::put('api_user_id', $_GET['user_id']);
+			if( isset($_GET['user_name']) ) Session::put('api_user_name', $_GET['user_name']);
 			$linkedinService = \OAuth::consumer('Linkedin','http://social-lena.dev/linkedin/login/?wp=true');
 		}else{
 			$linkedinService = \OAuth::consumer('Linkedin','http://social-lena.dev/linkedin/login');
@@ -161,9 +166,12 @@ class OauthController extends Controller
 			// Send a request with it. Please note that XML is the default format.
 			$result = json_decode($linkedinService->request('/people/~?format=json'), true);
 			$result['access_token'] = $token->getAccessToken();
+			$result['access_token_secret'] = '';
+
 			if(isset($_GET['wp'])) {
-				$result['name'] = $result['firstName'];
-				return $this->_register($result,'linkedin', $wp);
+				$result['first_name'] = $result['firstName'];
+				$result['last_name'] = $result['lastName'];
+				return $this->regApi($result,'linkedin', $wp);
 			}
 			if( isset($result['access_token']) ) {
 				return $this->_register($result,'linkedin');
@@ -183,8 +191,10 @@ class OauthController extends Controller
 	protected function _register($data,$provider,$wp = null)
 	{
 		$member = Auth::user();
+
 		$currentDate = date("Y-m-d H:i:s");
 		$get_social_id = Social::where('provider',$provider)->first();
+
 		if( isset($data['email']) && $data['email'] != null ) {
 			$check_user_by_email = User::where('email',$data['email'])->first(); // fb, google
 		}
@@ -192,16 +202,14 @@ class OauthController extends Controller
 			$data['email'] = $data['id'];
 			$check_user_by_email = null;
 		}
+
 		if( isset($check_user_by_email) && $check_user_by_email != null ) {
-			$check_oauth_by_userIdAndProvider = Oauth::
-						leftJoin('users', 'oauth.user_id', '=', 'users.id')
+			$check_oauth_by_userIdAndProvider = Oauth::leftJoin('users', 'oauth.user_id', '=', 'users.id')
 						->where('oauth.user_id',$check_user_by_email->id)
 						->where('oauth.provider',$provider)
 						->first();
-		}
-		else {
-			$check_oauth_by_userIdAndProvider = Oauth::
-			                                      leftJoin('users', 'oauth.user_id', '=', 'users.id')
+		}else {
+			$check_oauth_by_userIdAndProvider = Oauth::leftJoin('users', 'oauth.user_id', '=', 'users.id')
 			                                      ->where('oauth.provider_user_id',$data['id'])
 			                                      ->where('oauth.provider',$provider)
 			                                      ->first();
@@ -333,8 +341,7 @@ class OauthController extends Controller
 					return redirect('/home');
 				}
 
-			}
-			else {
+			}else {
 				$updexistsOauth = Oauth::
 											where('user_id',$member->id)
 				   	               ->where('provider',$provider)
@@ -367,7 +374,71 @@ class OauthController extends Controller
 				return redirect('/home');
 			}
 		}
+
+
+
 	// END
+	}
+
+	protected function regApi($data,$provider,$wp)
+	{
+		if( Session::has('api_user_id') ) {
+			$user_id = Session::get('api_user_id');
+			$user = Session::get('api_user_name');
+		}else{
+			$user_id = null;
+			$user = null;
+		}
+		$currentDate = date("Y-m-d H:i:s");
+		$get_social_id = Social::where('provider',$provider)->first();
+		$check_user_by_id = User::where('id',$user_id)->first();
+		if( isset($check_user_by_id) && $check_user_by_id != null ) {
+			$check_oauth_by_userIdAndProvider = Oauth::leftJoin('users', 'oauth.user_id', '=', 'users.id')
+			                                         ->where('oauth.user_id',$check_user_by_id->id)
+			                                         ->where('oauth.user_name',$user)
+			                                         ->where('oauth.provider',$provider)
+			                                         ->where('oauth.provider_user_id',$data['id'])
+			                                         ->first();
+			if( isset($check_oauth_by_userIdAndProvider) && $check_oauth_by_userIdAndProvider != null ) {
+				$updexistsOauth = Oauth::where('user_id',$check_user_by_id->id)
+				                       ->where('provider',$provider)
+				                       ->where('provider_user_id',$data['id'])
+				                       ->update([
+					                       'access_token' => $data['access_token'],
+					                       'updated_at' => $currentDate,
+				                       ]);
+				return redirect($check_user_by_id->user_url.'/wp-admin/admin.php?page=iio4social-network');
+			}else {
+				$check_oauth_by_provId = Oauth::leftJoin('users', 'oauth.user_id', '=', 'users.id')
+				                                          ->where('oauth.user_id',$check_user_by_id->id)
+																		->where('oauth.provider_user_id',$data['id'])
+				                                          ->where('oauth.provider',$provider)
+				                                          ->first();
+				if( isset($check_oauth_by_provId)  && $check_oauth_by_provId != null ) {
+					return redirect($check_user_by_id->user_url.'/wp-admin/admin.php?page=iio4social-network&success=false');
+				}else {
+					Oauth::insert(
+					[
+						'user_id'            => $check_user_by_id->id,
+						'user_name'          => $user,
+						'first_name'         => $data['first_name'],
+						'last_name'          => $data['last_name'],
+						'provider_user_id'   => $data['id'],
+						'provider'           => $provider,
+						'access_token'       => $data['access_token'],
+						'access_token_secret'=> $data['access_token_secret'],
+						'created_at'         => $currentDate,
+						'updated_at'         => $currentDate,
+						'social_id'          => $get_social_id->id,
+					]);
+					return redirect($check_user_by_id->user_url.'/wp-admin/admin.php?page=iio4social-network');
+				}
+			}
+		}
+		else{
+			return response(['result'=>false]);
+		}
+
 	}
 
 	public function destroy( $id, Request $request )

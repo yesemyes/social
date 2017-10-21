@@ -2,10 +2,8 @@
 
 namespace App\Http\Controllers;
 
-//use Illuminate\Support\Facades\Session;
 use Illuminate\Http\Request;
 use App\User;
-//use App\Api_user;
 use App\Social;
 use App\Oauth;
 use DB;
@@ -34,16 +32,9 @@ class HomeController extends Controller
     public function index()
     {
 			$user = Auth::user();
-			//$user = new User;
-	      //dd($user);
 			$socials = Social::get();
 			$userConnectedAccounts = $user->connectedAccounts()->get()->keyBy('social_id');
-			/*$userConnectedAccounts = $user::select('oauth.*','users.*')
-			                              ->leftJoin('api_users','api_users.id','=','users.api_user_id')
-			                              ->leftJoin('oauth','oauth.user_id','=','users.id')
-			                              ->where('users.api_user_id',3)
-			                              ->where('users.id',72)->get()->keyBy('social_id');*/
-			//dd($userConnectedAccounts);
+
 			$userAccounts = array();
 			foreach($socials as $key => $item) {
 
@@ -61,7 +52,6 @@ class HomeController extends Controller
 				}else{
 					$userAccounts[$key] = ['provider' => $item->provider,'icon' => $item['icon']];
 				}
-				//dump($item);
 			}
 			return view('home', ['user' => $user, 'userAccounts' => $userAccounts]);
     }
