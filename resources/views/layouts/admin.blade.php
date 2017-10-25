@@ -20,19 +20,19 @@
     </script>
     <script src="https://apis.google.com/js/platform.js" async defer></script>
     <!-- Bootstrap Core CSS -->
-    <link href="{{ URL::asset('bower_components/bootstrap/dist/css/bootstrap.min.css') }}" rel="stylesheet">
+    <link href="{{ secure_asset('bower_components/bootstrap/dist/css/bootstrap.min.css') }}" rel="stylesheet">
 
     <!-- MetisMenu CSS -->
-    <link href="{{ URL::asset('bower_components/metisMenu/dist/metisMenu.min.css') }}" rel="stylesheet">
+    <link href="{{ secure_asset('bower_components/metisMenu/dist/metisMenu.min.css') }}" rel="stylesheet">
 
     <!-- jQuery -->
-    <script src="{{ URL::asset('bower_components/jquery/dist/jquery.min.js') }}"></script>
+    <script src="{{ secure_asset('bower_components/jquery/dist/jquery.min.js') }}"></script>
 
     <!-- Custom CSS -->
-    <link href="{{ URL::asset('dist/css/sb-admin-2.css') }}" rel="stylesheet">
+    <link href="{{ secure_asset('dist/css/sb-admin-2.css') }}" rel="stylesheet">
 
     <!-- Custom Fonts -->
-    <link href="{{ URL::asset('bower_components/font-awesome/css/font-awesome.min.css') }}" rel="stylesheet" type="text/css">
+    <link href="{{ secure_asset('bower_components/font-awesome/css/font-awesome.min.css') }}" rel="stylesheet" type="text/css">
 
     <!-- <link rel="stylesheet" href="{{ URL::asset('bower_components/jquery/src/css/jquery-ui.min.css') }}"> -->
 
@@ -135,13 +135,13 @@
 
 
 <!-- Bootstrap Core JavaScript -->
-<script src="{{ URL::asset('bower_components/bootstrap/dist/js/bootstrap.min.js') }}"></script>
+<script src="{{ secure_asset('bower_components/bootstrap/dist/js/bootstrap.min.js') }}"></script>
 
 <!-- Metis Menu Plugin JavaScript -->
-<script src="{{ URL::asset('bower_components/metisMenu/dist/metisMenu.min.js') }}"></script>
+<script src="{{ secure_asset('bower_components/metisMenu/dist/metisMenu.min.js') }}"></script>
 
 <!-- Custom Theme JavaScript -->
-<script src="{{ URL::asset('dist/js/sb-admin-2.js') }}"></script>
+<script src="{{ secure_asset('dist/js/sb-admin-2.js') }}"></script>
 
 <script src="/js/index.js"></script>
 

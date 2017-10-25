@@ -25,10 +25,10 @@ class OauthController extends Controller
 			$wp = $_GET['wp'];
 			if( isset($_GET['user_id']) ) Session::put('api_user_id', $_GET['user_id']);
 			if( isset($_GET['user_name']) ) Session::put('api_user_name', $_GET['user_name']);
-			$fb = \OAuth::consumer('Facebook', 'http://social-lena.dev/facebook/login/?wp=true');
+			$fb = \OAuth::consumer('Facebook', 'https://ipisocial.iimagine.one/facebook/login/?wp=true');
 		}else {
 			$wp = null;
-			$fb = \OAuth::consumer('Facebook', 'http://social-lena.dev/facebook/login');
+			$fb = \OAuth::consumer('Facebook', 'https://ipisocial.iimagine.one/facebook/login');
 		}
 
 		// if code is provided get user data and sign in
@@ -64,10 +64,10 @@ class OauthController extends Controller
 			$wp = $_GET['wp'];
 			if( isset($_GET['user_id']) ) Session::put('api_user_id', $_GET['user_id']);
 			if( isset($_GET['user_name']) ) Session::put('api_user_name', $_GET['user_name']);
-			$googleService = \OAuth::consumer('Google','http://social-lena.dev/google/login/?wp=true');
+			$googleService = \OAuth::consumer('Google','https://ipisocial.iimagine.one/google/login/?wp=true');
 		}else{
 			$wp = null;
-			$googleService = \OAuth::consumer('Google','http://social-lena.dev/google/login');
+			$googleService = \OAuth::consumer('Google','https://ipisocial.iimagine.one/google/login');
 		}
 		// check if code is valid
 
@@ -110,9 +110,9 @@ class OauthController extends Controller
 			$wp = $_GET['wp'];
 			if( isset($_GET['user_id']) ) Session::put('api_user_id', $_GET['user_id']);
 			if( isset($_GET['user_name']) ) Session::put('api_user_name', $_GET['user_name']);
-			$tw = \OAuth::consumer('Twitter',   'http://social-lena.dev/twitter/login/?wp=true');
+			$tw = \OAuth::consumer('Twitter',   'https://ipisocial.iimagine.one/twitter/login/?wp=true');
 		}else{
-			$tw = \OAuth::consumer('Twitter', 'http://social-lena.dev/twitter/login');
+			$tw = \OAuth::consumer('Twitter', 'https://ipisocial.iimagine.one/twitter/login');
 		}
 		// check if code is valid
 		// if code is provided get user data and sign in
@@ -155,9 +155,9 @@ class OauthController extends Controller
 			$wp = $_GET['wp'];
 			if( isset($_GET['user_id']) ) Session::put('api_user_id', $_GET['user_id']);
 			if( isset($_GET['user_name']) ) Session::put('api_user_name', $_GET['user_name']);
-			$linkedinService = \OAuth::consumer('Linkedin','http://social-lena.dev/linkedin/login/?wp=true');
+			$linkedinService = \OAuth::consumer('Linkedin','https://ipisocial.iimagine.one/linkedin/login/?wp=true');
 		}else{
-			$linkedinService = \OAuth::consumer('Linkedin','http://social-lena.dev/linkedin/login');
+			$linkedinService = \OAuth::consumer('Linkedin','https://ipisocial.iimagine.one/linkedin/login');
 		}
 		if ( ! is_null($code))
 		{
@@ -184,6 +184,148 @@ class OauthController extends Controller
 			$url = $linkedinService->getAuthorizationUri(['state'=>'DCEEFWF45453sdffef424']);
 
 			// return to linkedin login url
+			return redirect((string)$url);
+		}
+	}
+
+	public function loginWithInstagram(Request $request)
+	{
+		// get data from request
+		$code = $request->get('code');
+		if( isset($_GET['wp']) ) {
+			$wp = $_GET['wp'];
+			if( isset($_GET['user_id']) ) Session::put('api_user_id', $_GET['user_id']);
+			if( isset($_GET['user_name']) ) Session::put('api_user_name', $_GET['user_name']);
+			$instagramService = \OAuth::consumer('Instagram','https://ipisocial.iimagine.one/instagram/login/?wp=true');
+		}else{
+			$instagramService = \OAuth::consumer('Instagram','https://ipisocial.iimagine.one/instagram/login');
+		}
+		if ( ! is_null($code))
+		{
+			$state = isset($_GET['state']) ? $_GET['state'] : null;
+			// This was a callback request from Instagram, get the token
+
+			$token = $instagramService->requestAccessToken($code, $state);
+
+			// Send a request with it. Please note that XML is the default format.
+			$result = json_decode($instagramService->request('users/self'), true);
+
+			$result['access_token'] = $token->getAccessToken();
+
+			$result['access_token_secret'] = '';
+
+			if(isset($_GET['wp'])) {
+				$result['id'] = $result['data']['id'];
+				$result['first_name'] = $result['data']['username'];
+				$result['last_name'] = '';
+				return $this->regApi($result,'instagram', $wp);
+			}
+			if( isset($result['access_token']) ) {
+				return $this->_register($result,'instagram');
+			}
+		}
+		// if not ask for permission first
+		else
+		{
+			// get instagramService authorization
+			$url = $instagramService->getAuthorizationUri();
+
+			// return to instagram login url
+			return redirect((string)$url);
+		}
+	}
+
+	public function loginWithReddit(Request $request)
+	{
+		// get data from request
+		$code = $request->get('code');
+		if( isset($_GET['wp']) ) {
+			$wp = $_GET['wp'];
+			if( isset($_GET['user_id']) ) Session::put('api_user_id', $_GET['user_id']);
+			if( isset($_GET['user_name']) ) Session::put('api_user_name', $_GET['user_name']);
+			$reddit = \OAuth::consumer('Reddit','https://ipisocial.iimagine.one/reddit/login/?wp=true');
+		}else{
+			$reddit = \OAuth::consumer('Reddit','https://ipisocial.iimagine.one/reddit/login');
+		}
+
+		if ( ! is_null($code))
+		{
+			$state = isset($_GET['state']) ? $_GET['state'] : null;
+			// This was a callback request from Instagram, get the token
+
+			$token = $reddit->requestAccessToken($code, $state);
+
+			// Send a request with it. Please note that XML is the default format.
+			$result = json_decode($reddit->request('api/v1/me.json'), true);
+
+			$result['access_token'] = $token->getAccessToken();
+
+			$result['access_token_secret'] = '';
+
+
+			if(isset($_GET['wp'])) {
+				$result['first_name'] = $result['name'];
+				$result['last_name'] = '';
+				return $this->regApi($result,'reddit', $wp);
+			}
+			if( isset($result['access_token']) ) {
+				return $this->_register($result,'reddit');
+			}
+		}
+		// if not ask for permission first
+		else
+		{
+			// get reddit authorization
+			$url = $reddit->getAuthorizationUri();
+
+			// return to instagram login url
+			return redirect((string)$url);
+		}
+	}
+
+	public function loginWithPinterest(Request $request)
+	{
+		// get data from request
+		$code = $request->get('code');
+		if( isset($_GET['wp']) ) {
+			$wp = $_GET['wp'];
+			if( isset($_GET['user_id']) ) Session::put('api_user_id', $_GET['user_id']);
+			if( isset($_GET['user_name']) ) Session::put('api_user_name', $_GET['user_name']);
+			$pinterestService = \OAuth::consumer('Pinterest','https://ipisocial.iimagine.one/pinterest/login/?wp=true');
+		}else{
+			$pinterestService = \OAuth::consumer('Pinterest','https://ipisocial.iimagine.one/pinterest/login');
+		}
+
+		if ( ! is_null($code))
+		{
+			$state = isset($_GET['state']) ? $_GET['state'] : null;
+			// This was a callback request from Instagram, get the token
+
+			$token = $pinterestService->requestAccessToken($code, $state);
+
+			// Send a request with it. Please note that XML is the default format.
+			$result = json_decode($pinterestService->request('v1/me/'), true);
+
+			$result['access_token'] = $token->getAccessToken();
+
+			$result['access_token_secret'] = '';
+
+			if(isset($_GET['wp'])) {
+				$result['first_name'] = $result['data']['first_name'];
+				$result['last_name'] = $result['data']['last_name'];
+				$result['id'] = $result['data']['id'];
+				return $this->regApi($result,'pinterest', $wp);
+			}
+			if( isset($result['access_token']) ) {
+				return $this->_register($result,'pinterest');
+			}
+		}
+		// if not ask for permission first
+		else
+		{
+			// get reddit authorization
+			$url = $pinterestService->getAuthorizationUri();
+			// return to instagram login url
 			return redirect((string)$url);
 		}
 	}

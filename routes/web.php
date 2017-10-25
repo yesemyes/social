@@ -27,6 +27,8 @@ Route::get('google/login/{wp?}', 'Auth\OauthController@loginWithGoogle');
 Route::get('twitter/login/{wp?}', 'Auth\OauthController@loginWithTwitter');
 Route::get('linkedin/login/{wp?}', 'Auth\OauthController@loginWithLinkedin');
 Route::get('instagram/login/{wp?}', 'Auth\OauthController@loginWithInstagram');
+Route::get('reddit/login/{wp?}', 'Auth\OauthController@loginWithReddit');
+Route::get('pinterest/login/{wp?}', 'Auth\OauthController@loginWithPinterest');
 
 
 //Route::get('check/email/{id}/{url}', 'Auth\OauthController@checkEmail');
